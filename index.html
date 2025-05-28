@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P2P Chat Svetainė</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            height: 90vh;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .header {
+            background: #667eea;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+
+        .connection-status {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .status-connected { background: #28a745; }
+        .status-connecting { background: #ffc107; color: #000; }
+        .status-disconnected { background: #dc3545; }
+
+        .setup-section {
+            padding: 30px;
+            background: #f8f9fa;
+        }
+
+        .setup-section h2 {
+            margin-bottom: 20px;
+            color: #333;
+            text-align: center;
+        }
+
+        .setup-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 20px;
+        }
+
+        .setup-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .setup-card h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .setup-card input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .setup-card button {
+            width: 100%;
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+
+        .setup-card button:hover {
+            background: #5a6fd8;
+        }
+
+        .my-id-display {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .my-id-display strong {
+            color: #1976d2;
+            font-family: monospace;
+            font-size: 18px;
+        }
+
+        .copy-btn {
+            background: #28a745 !important;
+            margin-top: 10px;
+            padding: 8px 16px !important;
+            font-size: 14px !important;
+        }
+
+        .copy-btn:hover {
+            background: #218838 !important;
+        }
+
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #f8f9fa;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 12px;
+            border-radius: 12px;
+            background: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            word-wrap: break-word;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.own {
+            background: #667eea;
+            color: white;
+            margin-left: 50px;
+        }
+
+        .message.own .username {
+            color: #e3e8ff;
+        }
+
+        .message .username {
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .message .timestamp {
+            font-size: 11px;
+            opacity: 0.7;
+            font-weight: normal;
+        }
+
+        .message .content {
+            margin-top: 8px;
+            line-height: 1.4;
+        }
+
+        .message img {
+            max-width: 300px;
+            max-height: 300px;
+            border-radius: 10px;
+            margin-top: 10px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .message img:hover {
+            transform: scale(1.02);
+        }
+
+        .system-message {
+            background: #e9ecef !important;
+            color: #6c757d !important;
+            font-style: italic;
+            text-align: center;
+            margin-left: 0 !important;
+        }
+
+        .input-area {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #ddd;
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+
+        .message-input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            resize: vertical;
+            min-height: 44px;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .message-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .send-btn, .image-btn {
+            padding: 12px 16px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            white-space: nowrap;
+            transition: background 0.3s;
+        }
+
+        .send-btn:hover, .image-btn:hover {
+            background: #5a6fd8;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .connected-peers {
+            padding: 12px 20px;
+            background: #e9ecef;
+            border-top: 1px solid #ddd;
+            font-size: 14px;
+        }
+
+        .connected-peers strong {
+            color: #667eea;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.9);
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal img {
+            margin: auto;
+            display: block;
+            max-width: 90%;
+            max-height: 90%;
+            margin-top: 5%;
+            border-radius: 10px;
+        }
+
+        .close {
+            position: absolute;
+            top: 15px;
+            right: 35px;
+            color: #f1f1f1;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .close:hover {
+            color: #ccc;
+        }
+
+        .info-box {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+            color: #155724;
+        }
+
+        .info-box h4 {
+            margin-bottom: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .setup-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .container {
+                height: 100vh;
+                border-radius: 0;
+            }
+            
+            .message.own {
+                margin-left: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌐 P2P Chat Svetainė</h1>
+            <div id="connectionStatus" class="connection-status status-disconnected">
+                Neprisijungęs
+            </div>
+        </div>
+
+        <div id="setupSection" class="setup-section">
+            <h2>Prisijungimas prie P2P tinklo</h2>
+            
+            <div class="setup-grid">
+                <div class="setup-card">
+                    <h3>🆕 Sukurti naują chatą</h3>
+                    <input type="text" id="usernameCreate" placeholder="Jūsų vardas..." maxlength="20">
+                    <button onclick="createChat()">Sukurti chatą</button>
+                </div>
+                
+                <div class="setup-card">
+                    <h3>🔗 Prisijungti prie chato</h3>
+                    <input type="text" id="usernameJoin" placeholder="Jūsų vardas..." maxlength="20">
+                    <input type="text" id="peerIdToConnect" placeholder="Įveskite chat ID...">
+                    <button onclick="joinChat()">Prisijungti</button>
+                </div>
+            </div>
+
+            <div id="myIdDisplay" class="my-id-display hidden">
+                <p>Jūsų chat ID (pasidalinkite su draugais):</p>
+                <strong id="myPeerId"></strong>
+                <br>
+                <button class="copy-btn" onclick="copyToClipboard()">📋 Kopijuoti ID</button>
+            </div>
+
+            <div class="info-box">
+                <h4>💡 Kaip naudotis:</h4>
+                <p><strong>1.</strong> Sukurkite naują chatą arba prisijunkite prie esamo</p>
+                <p><strong>2.</strong> Pasidalinkite savo chat ID su draugais</p>
+                <p><strong>3.</strong> Jūsų draugai gali prisijungti naudodami jūsų ID</p>
+                <p><strong>4.</strong> Komunikavimas vyksta tiesiogiai tarp naršyklių (P2P)</p>
+            </div>
+        </div>
+
+        <div id="chatContainer" class="chat-container hidden">
+            <div class="messages" id="messages"></div>
+            <div class="connected-peers">
+                <strong>Prisijungę:</strong> <span id="peersList">Tik jūs</span>
+            </div>
+            <div class="input-area">
+                <textarea id="messageInput" class="message-input" placeholder="Parašykite žinutę..." rows="1"></textarea>
+                <input type="file" id="fileInput" accept="image/*" onchange="uploadImage()">
+                <button class="image-btn" onclick="document.getElementById('fileInput').click()" title="Įkelti nuotrauką">📷</button>
+                <button class="send-btn" onclick="sendMessage()">Siųsti</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal nuotraukų peržiūrai -->
+    <div id="imageModal" class="modal" onclick="closeModal()">
+        <span class="close">&times;</span>
+        <img id="modalImage" src="" alt="">
+    </div>
+
+    <!-- PeerJS Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.4.7/peerjs.min.js"></script>
+
+    <script>
+        // Globalūs kintamieji
+        let peer = null;
+        let connections = new Map();
+        let currentUser = '';
+        let messages = [];
+
+        // P2P ryšio inicializavimas
+        function initializePeer() {
+            peer = new Peer({
+                host: 'peerjs-server.herokuapp.com',
+                port: 443,
+                path: '/',
+                secure: true,
+                config: {
+                    iceServers: [
+                        { urls: 'stun:stun.l.google.com:19302' },
+                        { urls: 'stun:stun1.l.google.com:19302' }
+                    ]
+                }
+            });
+
+            peer.on('open', function(id) {
+                console.log('Mano peer ID:', id);
+                document.getElementById('myPeerId').textContent = id;
+                document.getElementById('myIdDisplay').classList.remove('hidden');
+                updateConnectionStatus('connected', 'Prisijungęs');
+            });
+
+            peer.on('connection', function(conn) {
+                console.log('Naujas ryšys:', conn.peer);
+                setupConnection(conn);
+            });
+
+            peer.on('error', function(err) {
+                console.error('Peer klaida:', err);
+                updateConnectionStatus('disconnected', 'Klaida: ' + err.type);
+            });
+
+            peer.on('disconnected', function() {
+                console.log('Atsijungta nuo signaling serverio');
+                updateConnectionStatus('connecting', 'Bandoma prisijungti...');
+                peer.reconnect();
+            });
+        }
+
+        // Ryšio su kitu peer setup
+        function setupConnection(conn) {
+            connections.set(conn.peer, conn);
+
+            conn.on('open', function() {
+                console.log('Ryšys atidarytas su:', conn.peer);
+                addSystemMessage(`Naujas vartotojas prisijungė`);
+                updatePeersList();
+                
+                // Pasiųsti savo vardą
+                conn.send({
+                    type: 'user_info',
+                    username: currentUser,
+                    peerId: peer.id
+                });
+            });
+
+            conn.on('data', function(data) {
+                handleIncomingData(data, conn.peer);
+            });
+
+            conn.on('close', function() {
+                console.log('Ryšys užidarytas su:', conn.peer);
+                connections.delete(conn.peer);
+                addSystemMessage(`Vartotojas atsijungė`);
+                updatePeersList();
+            });
+
+            conn.on('error', function(err) {
+                console.error('Ryšio klaida:', err);
+            });
+        }
+
+        // Duomenų apdorojimas
+        function handleIncomingData(data, fromPeer) {
+            switch(data.type) {
+                case 'message':
+                    const message = {
+                        id: data.id,
+                        username: data.username,
+                        text: data.text,
+                        timestamp: new Date(data.timestamp),
+                        type: 'text'
+                    };
+                    messages.push(message);
+                    displayMessage(message);
+                    scrollToBottom();
+                    break;
+
+                case 'image':
+                    const imageMessage = {
+                        id: data.id,
+                        username: data.username,
+                        text: data.text || '',
+                        timestamp: new Date(data.timestamp),
+                        type: 'image',
+                        imageData: data.imageData
+                    };
+                    messages.push(imageMessage);
+                    displayMessage(imageMessage);
+                    scrollToBottom();
+                    break;
+
+                case 'user_info':
+                    console.log('Gauta vartotojo info:', data.username);
+                    break;
+            }
+        }
+
+        // Chat sukūrimas
+        function createChat() {
+            const username = document.getElementById('usernameCreate').value.trim();
+            if (!username) {
+                alert('Prašome įvesti vardą!');
+                return;
+            }
+
+            currentUser = username;
+            updateConnectionStatus('connecting', 'Jungiamasi...');
+            initializePeer();
+            showChatInterface();
+        }
+
+        // Prisijungimas prie chato
+        function joinChat() {
+            const username = document.getElementById('usernameJoin').value.trim();
+            const peerIdToConnect = document.getElementById('peerIdToConnect').value.trim();
+            
+            if (!username || !peerIdToConnect) {
+                alert('Prašome įvesti vardą ir chat ID!');
+                return;
+            }
+
+            currentUser = username;
+            updateConnectionStatus('connecting', 'Jungiamasi...');
+
+            // Inicializuoti peer
+            peer = new Peer({
+                host: 'peerjs-server.herokuapp.com',
+                port: 443,
+                path: '/',
+                secure: true,
+                config: {
+                    iceServers: [
+                        { urls: 'stun:stun.l.google.com:19302' },
+                        { urls: 'stun:stun1.l.google.com:19302' }
+                    ]
+                }
+            });
+
+            peer.on('open', function(id) {
+                console.log('Mano peer ID:', id);
+                
+                // Prisijungti prie nurodyto peer
+                const conn = peer.connect(peerIdToConnect);
+                setupConnection(conn);
+                
+                updateConnectionStatus('connected', 'Prisijungęs');
+                showChatInterface();
+            });
+
+            peer.on('connection', function(conn) {
+                setupConnection(conn);
+            });
+
+            peer.on('error', function(err) {
+                console.error('Peer klaida:', err);
+                updateConnectionStatus('disconnected', 'Klaida: ' + err.type);
+                alert('Nepavyko prisijungti. Patikrinkite chat ID.');
+            });
+        }
+
+        // Chat sąsajos rodymas
+        function showChatInterface() {
+            document.getElementById('setupSection').classList.add('hidden');
+            document.getElementById('chatContainer').classList.remove('hidden');
+            document.getElementById('messageInput').focus();
+            
+            addSystemMessage(`Sveiki, ${currentUser}! Laukiame kitų dalyvių...`);
+        }
+
+        // Žinutės siuntimas
+        function sendMessage() {
+            const messageInput = document.getElementById('messageInput');
+            const text = messageInput.value.trim();
+            
+            if (text.length === 0) return;
+
+            const messageData = {
+                type: 'message',
+                id: Date.now() + '_' + peer.id,
+                username: currentUser,
+                text: text,
+                timestamp: new Date().toISOString()
+            };
+
+            // Išsiųsti visiems prisijungusiems
+            connections.forEach((conn) => {
+                if (conn.open) {
+                    conn.send(messageData);
+                }
+            });
+
+            // Pridėti į savo žinutes
+            const message = {
+                id: messageData.id,
+                username: currentUser,
+                text: text,
+                timestamp: new Date(),
+                type: 'text'
+            };
+
+            messages.push(message);
+            displayMessage(message);
+            messageInput.value = '';
+            messageInput.style.height = 'auto';
+            scrollToBottom();
+        }
+
+        // Nuotraukos įkėlimas
+        function uploadImage() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            
+            if (!file) return;
+            
+            if (!file.type.startsWith('image/')) {
+                alert('Prašome pasirinkti nuotraukos failą!');
+                return;
+            }
+            
+            if (file.size > 2 * 1024 * 1024) { // 2MB - P2P limitai
+                alert('Nuotrauka per didelė! Maksimalus dydis - 2MB.');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const imageData = {
+                    type: 'image',
+                    id: Date.now() + '_img_' + peer.id,
+                    username: currentUser,
+                    text: '',
+                    timestamp: new Date().toISOString(),
+                    imageData: e.target.result
+                };
+
+                // Išsiųsti visiems prisijungusiems
+                connections.forEach((conn) => {
+                    if (conn.open) {
+                        conn.send(imageData);
+                    }
+                });
+
+                // Pridėti į savo žinutes
+                const message = {
+                    id: imageData.id,
+                    username: currentUser,
+                    text: '',
+                    timestamp: new Date(),
+                    type: 'image',
+                    imageData: e.target.result
+                };
+
+                messages.push(message);
+                displayMessage(message);
+                scrollToBottom();
+            };
+            reader.readAsDataURL(file);
+            
+            fileInput.value = '';
+        }
+
+        // Sistema žinutės pridėjimas
+        function addSystemMessage(text) {
+            const message = {
+                id: Date.now() + '_system',
+                username: 'Sistema',
+                text: text,
+                timestamp: new Date(),
+                type: 'system'
+            };
+            messages.push(message);
+            displayMessage(message);
+            scrollToBottom();
+        }
+
+        // Žinutės atvaizdavimas
+        function displayMessage(message) {
+            const messagesContainer = document.getElementById('messages');
+            
+            const messageElement = document.createElement('div');
+            let className = 'message';
+            if (message.username === currentUser) {
+                className += ' own';
+            }
+            if (message.type === 'system') {
+                className += ' system-message';
+            }
+            messageElement.className = className;
+            
+            const timeString = message.timestamp.toLocaleTimeString('lt-LT', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            let messageContent = '';
+            if (message.type === 'system') {
+                messageContent = `<div class="content">${message.text}</div>`;
+            } else if (message.type === 'image') {
+                messageContent = `
+                    <div class="username">
+                        ${message.username}
+                        <span class="timestamp">${timeString}</span>
+                    </div>
+                    <div class="content">
+                        <img src="${message.imageData}" alt="Nuotrauka" onclick="openModal('${message.imageData}')">
+                        ${message.text ? `<p>${message.text}</p>` : ''}
+                    </div>
+                `;
+            } else {
+                messageContent = `
+                    <div class="username">
+                        ${message.username}
+                        <span class="timestamp">${timeString}</span>
+                    </div>
+                    <div class="content">${message.text}</div>
+                `;
+            }
+
+            messageElement.innerHTML = messageContent;
+            messagesContainer.appendChild(messageElement);
+        }
+
+        // Utility funkcijos
+        function updateConnectionStatus(status, text) {
+            const statusElement = document.getElementById('connectionStatus');
+            statusElement.className = `connection-status status-${status}`;
+            statusElement.textContent = text;
+        }
+
+        function updatePeersList() {
+            const count = connections.size;
+            const text = count === 0 ? 'Tik jūs' : `Jūs + ${count} kiti`;
+            document.getElementById('peersList').textContent = text;
+        }
+
+        function copyToClipboard() {
+            const peerId = document.getElementById('myPeerId').textContent;
+            navigator.clipboard.writeText(peerId).then(() => {
+                alert('Chat ID nukopijuotas!');
+            }).catch(() => {
+                // Fallback metodas
+                const textArea = document.createElement('textarea');
+                textArea.value = peerId;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                alert('Chat ID nukopijuotas!');
+            });
+        }
+
+        function openModal(imageSrc) {
+            document.getElementById('modalImage').src = imageSrc;
+            document.getElementById('imageModal').style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() {
+            document.getElementById('imageModal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+
+        function scrollToBottom() {
+            const messagesContainer = document.getElementById('messages');
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        // Event listeners
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                const activeElement = document.activeElement;
+                
+                if (activeElement.id === 'usernameCreate') {
+                    e.preventDefault();
+                    createChat();
+                } else if (activeElement.id === 'peerIdToConnect') {
+                    e.preventDefault();
+                    joinChat();
+                } else if (activeElement.id === 'messageInput') {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            }
+            
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+
+        document.getElementById('messageInput').addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+        });
+
+        // Inicializacija
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('usernameCreate').focus();
+        });
+    </script>
+</body>
+</html>
